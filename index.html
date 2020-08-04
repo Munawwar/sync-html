@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <div id="preview"></div>    
+    <div id="root"></div>    
+    <script type="module">
+      import { html, render } from './src/literal-html.js';
+      let count = 0;
+      const loop = setInterval(() => {
+        count += 1;
+        if (count === 10) {
+          clearInterval(loop);
+        }
+
+        const view = html`Count ${count} days and ${count} minutes`;
+        render(view, document.getElementById('root'));
+      }, 100);
+    </script>
+  </body>
+</html>

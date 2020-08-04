@@ -1,0 +1,8 @@
+{
+  "name": "literal-html",
+  "version": "0.1.0",
+  "description": "Simple, small HTML templating library using JS literal strings",
+  "main": "src/literal-html.js",
+  "author": "Munawwar Firoz",
+  "license": "MIT"
+}
