@@ -1,5 +1,42 @@
 const debug = true;
 
+/**
+ * @typedef NodesSlice
+ * @property {Comment} startMarker
+ * @property {Comment} endMarker
+ */
+
+/**
+ * @typedef {Node|NodesSlice} NodeGroup
+ */
+
+/**
+ * @typedef NodesSlice
+ * @property {Comment} startMarker
+ * @property {Comment} endMarker
+ */
+
+/**
+ * @typedef AttributeBinding
+ * @property {String} type='attr'
+ * @property {String} attributeName
+ */
+/**
+ * @typedef NodeBinding
+ * @property {String} type='node'
+ * @property {Comment} startMarker
+ * @property {Comment} endMarker
+ */
+/**
+ * @typedef {AttributeBinding|NodeBinding} Binding
+ */
+
+/**
+ * @typedef NodeGroupsAndBindings
+ * @property {NodeGroup[]} nodeGroups
+ * @property {Binding[]} bindings
+ */
+
 class Template {
   constructor({ html, marker, nodeMarker }) {
     /** @type {String} */
@@ -23,11 +60,16 @@ class Template {
     }
   }
 
-  getNewNodesAndBindings() {
+  /**
+   * @returns {NodeGroupsAndBindings}
+   */
+  getNodeGroupsAndBindings() {
     this.prepareForDOMEnv();
     const fragment = this.fragment.cloneNode(true);
 
+    /** @type {Binding[]} */
     const bindings = [];
+    /** @type {NodeGroup[]} */
     const nodeGroups = [];
     // add root nodes to nodes array
     const addIfRootNode = (node) => {
@@ -35,10 +77,13 @@ class Template {
         nodeGroups.push(node);
       }
     };
-    const addNodeGroup = (startMarker, endMarker) => nodeGroups.push({
-      startMarker,
-      endMarker,
-    });
+    const addNodeGroup = (startMarker, endMarker) => nodeGroups.push(
+      /** @type {NodesSlice} */
+      {
+        startMarker,
+        endMarker,
+      }
+    );
 
     // traverse template nodes and figure out attribute and child bindings
     let count = 0;
@@ -69,8 +114,8 @@ class Template {
       } else if (node.nodeType === 8) { // comment node
         if (node.data === this.nodeMarker) {
           const id = String(Math.random() * 1000000 | 0);
-          node.data = String(`${id}-start`);
-          const beforeMarker = document.createComment(String(`${id}-end`));
+          const beforeMarker = document.createComment(String(`${id}-start`));
+          node.data = String(`${id}-end`);
           node.parentNode.insertBefore(beforeMarker, node);
           bindings.push({
             type: 'node',
@@ -129,10 +174,13 @@ class View {
    * @param {(String|View|Node|null)[]} config.values
    */
   constructor({ strings, values }) {
+    /** @type {Template} */
     this.template = templateFactory({ strings });
     this.values = null;
     this.pendingValues = values;
+    /** @type {NodeGroup[]} */
     this.nodeGroups = null;
+    /** @type {Binding[]} */
     this.bindings = null;
   }
 
@@ -158,7 +206,7 @@ class View {
 
   prepareForFirstTimeRender() {
     if (!this.nodeGroups) {
-      const { nodeGroups, bindings } = this.template.getNewNodesAndBindings();
+      const { nodeGroups, bindings } = this.template.getNodeGroupsAndBindings();
       this.nodeGroups = nodeGroups;
       this.bindings = bindings;
       this.values = this.pendingValues;
@@ -215,7 +263,7 @@ class View {
           }
           View.reconcileNodes(nodes, startMarker, endMarker);
         } else {
-          // assuming values is a text node at this point
+          // assuming values is a text node or primitive (string/number) at this point
           // console.log('before reconcile', View.getNodesBetween(startMarker, endMarker));
           // debugger;
           View.reconcileNodes([value], startMarker, endMarker);
@@ -240,7 +288,7 @@ class View {
       // check for comment markers
       if (!parentNode.firstChild || parentNode.firstChild.nodeType !== 8) {
         // clear content and add comment markers
-        parentNode.innerHTML = '<!--o--><!--o-->';
+        parentNode.innerHTML = '<!--p--><!--p-->';
       }
       View.reconcileNodes(nodes, parentNode.firstChild, parentNode.lastChild);
     } else if (startNode || endNode) {
@@ -295,10 +343,11 @@ View.getNodesBetween = (startMarker, endMarker) => {
 View.reconcileNodes = (newNodes, startMarker, endMarker) => {
   let currentNode = startMarker.nextSibling;
   let index = 0;
+  const toTextNode = (value) => ((value instanceof Node) ? value : document.createTextNode(String(value)));
   while (currentNode && currentNode !== endMarker && index < newNodes.length) {
     const newNode = newNodes[index];
     if (currentNode !== newNode) {
-      currentNode.parentNode.replaceChild(newNode, currentNode);
+      currentNode.parentNode.replaceChild(toTextNode(newNode), currentNode);
     }
     // prepare for next iteration
     currentNode = currentNode.nextSibling;
@@ -315,7 +364,7 @@ View.reconcileNodes = (newNodes, startMarker, endMarker) => {
   // insert rest of nodes
   while (index < newNodes.length) {
     const newNode = newNodes[index];
-    endMarker.parentNode.insertBefore(newNode, endMarker);
+    endMarker.parentNode.insertBefore(toTextNode(newNode), endMarker);
     // prepare for next iteration
     index += 1;
   }
@@ -323,8 +372,6 @@ View.reconcileNodes = (newNodes, startMarker, endMarker) => {
 
 // reconcile values. though this is implemented recursively, only two level of nested array depth
 // is actually supported by render
-// FIXME: values has text nodes whereas pendingValues has raw value.. the reconcilation is not good enough
-// FIXME: should I move the creation of text node to a different step in the processing?
 View.reconcileValues = (currentValues, pendingValues, maxLength = pendingValues.length) => {
   // compare pendingValue with currentValues and reuse previous views
   const newValues = [];
@@ -341,27 +388,8 @@ View.reconcileValues = (currentValues, pendingValues, maxLength = pendingValues.
       } else {
         newValues.push(newValue);
       }
-    } else if (oldValue === newValue) { // for Node, primitives etc
-      let value = oldValue;
-      // convert primitives to text nodes..
-      if (!(value instanceof Node)) {
-        value = document.createTextNode(String(value));
-      }
-      newValues.push(value);
-      
-      // if old value was a text node, then compare it's content against new value
-      // as otherwise the new value is going to be converted to text node anyway
-      // FIXME: having to do this makes me think creation of text node needs to move to different
-      // step in the processing?
-    } else if (oldValue instanceof Node && oldValue.nodeType === 3 && oldValue.data === String(newValue)) {
-      newValues.push(oldValue);
-    } else {
-      let value = newValue;
-      // convert primitives to text nodes..
-      if (!(value instanceof Node)) {
-        value = document.createTextNode(String(value));
-      }
-      newValues.push(value);
+    } else { // for Node, primitives etc
+      newValues.push(oldValue === newValue ? oldValue : newValue);
     }
   }
   return newValues;
