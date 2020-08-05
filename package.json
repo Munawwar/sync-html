@@ -4,5 +4,8 @@
   "description": "An experiment to find out the smallest HTML template to DOM sync approach",
   "main": "src/index.js",
   "author": "Munawwar Firoz",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "start": "http-server ."
+  }
 }
