@@ -38,14 +38,13 @@ const debug = true;
  */
 
 class Template {
-  constructor({ html, marker, nodeMarker }) {
+  constructor({ strings, marker, nodeMarker }) {
     /** @type {String} */
-    this.html = html;
+    this.strings = strings;
     /** @type {String} */
     this.marker = marker;
     /** @type {String} marker for child nodes */
     this.nodeMarker = nodeMarker;
-    // to get original template strings back all you need to do is this.html.split(this.marker);
     /** @type {DocumentFragment|undefined} */
     this.fragment = undefined;
   }
@@ -54,7 +53,7 @@ class Template {
   prepareForDOMEnv() {
     if (!this.fragment) {
       const template = document.createElement('template');
-      template.innerHTML = this.html;
+      template.innerHTML = this.strings.join(this.marker);;
       const fragment = template.content;
       this.fragment = fragment;
     }
@@ -149,13 +148,13 @@ const templateFactory = (() => {
     // why? cause if you add <![CDATA[${marker}]]> to HTML document, it becomes a comment
     // node like <!--[CDATA[marker]]-->. When you do node.data you get [CDATA[${marker}]]
 
-    const html = strings.join(marker);
-    cache[html] = cache[html] || new Template({
-      html,
+    const cacheKey = strings.join('');
+    cache[cacheKey] = cache[cacheKey] || new Template({
+      strings,
       marker,
       nodeMarker,
     });
-    return cache[html];
+    return cache[cacheKey];
   };
 })();
 
@@ -209,7 +208,6 @@ class View {
       const { nodeGroups, bindings } = this.template.getNodeGroupsAndBindings();
       this.nodeGroups = nodeGroups;
       this.bindings = bindings;
-      this.values = this.pendingValues;
     }
   }
 
@@ -234,6 +232,7 @@ class View {
       this.pendingValues || [],
       this.bindings.length,
     );
+    this.pendingValues = null;
 
     // console.log('this.values', this.values);
 
@@ -292,23 +291,8 @@ class View {
       }
       View.reconcileNodes(nodes, parentNode.firstChild, parentNode.lastChild);
     } else if (startNode || endNode) {
-      const throwError = (message) => {
-        throw new Error(message);
-      }
-      if (!startNode) {
-        throwError('endNode was passed to render() method but startNode was not specified.');
-      }
-      if (!endNode) {
-        throwError('startNode was passed to render() method but endNode was not specified.');
-      }
-      if (startNode === endNode) {
-        throwError('startNode and endNode was passed to render() method should be two different comment nodes. It must not be the same node.');
-      }
-      if (startNode.nodeType !== 8) {
-        throwError('startNode was passed to render() method is not a comment node');
-      }
-      if (endNode.nodeType !== 8) {
-        throwError('endNode was passed to render() method is not a comment node');
+      if (!startNode || !endNode || startNode.nodeType !== 8 || endNode.nodeType !== 8 || startNode === endNode) {
+        throw new Error('startNode and endNode must be two distinct HTML comment nodes');
       }
       View.reconcileNodes(nodes, startNode, endNode);
     } else {
@@ -317,6 +301,19 @@ class View {
       // that don't need to be removed.
       return nodes;
     }
+  }
+
+  renderToString() {
+    const stringParts = [];
+    const { strings } = this.template;
+    const values = this.pendingValues || this.values;
+    for (let index = 0; index < strings.length; index += 1) {
+      stringParts.push(strings[index]);
+      if (values[index] !== undefined) {
+        stringParts.push(values[index]);
+      }
+    }
+    return stringParts.join('');
   }
 }
 
