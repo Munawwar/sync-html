@@ -1,6 +1,10 @@
-# literal-html
+# sync-html
 
-An attempt to create a simple, small HTML templating library using JS literal strings
+An experiment to find out the smallest HTML template to DOM sync approach
 (and also support rendering as string for server-side JS environment).
 
-Mission is get the bundle size as small as possible. Currently gzipped size is ~1.5 KB
+Mission is to get the bundle size as small as possible.
+
+Current status:
+template literal approach - ~1.5 KB gzipped
+dumb DOM diff approach - 0.7 KB gzipped

@@ -1,8 +1,8 @@
 {
-  "name": "literal-html",
+  "name": "sync-html",
   "version": "0.1.0",
-  "description": "An experimental, small HTML templating library using JS literal strings",
-  "main": "src/literal-html.js",
+  "description": "An experiment to find out the smallest HTML template to DOM sync approach",
+  "main": "src/index.js",
   "author": "Munawwar Firoz",
   "license": "MIT"
 }

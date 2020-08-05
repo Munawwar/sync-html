@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <body>   
+    <div id="root"></div>    
+    <script type="module">
+      import { render } from './src/dom-diff.js';
+      let count = 0;
+      const loop = setInterval(() => {
+        count += 1;
+        if (count === 10) {
+          clearInterval(loop);
+        }
+
+        const html = `<div id="root">Count ${count} days and ${count} minutes</div>`;
+        render(html, document.getElementById('root'));
+        console.log(html);
+      }, 100);
+    </script>
+  </body>
+</html>

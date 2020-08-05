@@ -337,6 +337,7 @@ View.getNodesBetween = (startMarker, endMarker) => {
  * @param {Node} startMarker
  * @param {Node} endMarker 
  */
+// TODO: In future, optimize sorting lists (with keys).
 View.reconcileNodes = (newNodes, startMarker, endMarker) => {
   let currentNode = startMarker.nextSibling;
   let index = 0;
@@ -369,6 +370,7 @@ View.reconcileNodes = (newNodes, startMarker, endMarker) => {
 
 // reconcile values. though this is implemented recursively, only two level of nested array depth
 // is actually supported by render
+// TODO: In future, optimize sorting lists (with keys).
 View.reconcileValues = (currentValues, pendingValues, maxLength = pendingValues.length) => {
   // compare pendingValue with currentValues and reuse previous views
   const newValues = [];
