@@ -8,7 +8,7 @@ Mission is to get the bundle size as small as possible.
 Current status:
 
 * template literal approach - ~1.5 KB gzipped
-* dumb DOM diff approach - 0.7 KB gzipped
+* dumb DOM diff approach - ~0.5 KB gzipped
 
 ## How to check it
 
