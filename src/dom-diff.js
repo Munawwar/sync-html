@@ -1,4 +1,4 @@
-const {render, diffAndPatch} = (() => {
+let {render, diffAndPatch} = (() => {
   let correctDOMStateForRemovedAttribute = (el, attrName) => {
     if (['disabled', 'checked'].includes(attrName)) {
       el[attrName] = false;
@@ -17,17 +17,20 @@ const {render, diffAndPatch} = (() => {
   
   /**
    * Sync DOM from source element to target element.
-   *
-   * TODO: In future, optimize sorting lists (with keys).
    */
   // Dumb diff algo that checks nodes of same index
   // Time complexity O(n) - where n is lengths of the larger array.
   let diffAndPatch = (newNode, targetNode) => {
-    if (newNode.nodeType !== targetNode.nodeType || (newNode.nodeType === 1 && newNode.nodeName !== targetNode.nodeName)) {
+    if (newNode === targetNode) return;
+    let { nodeType: newNodeType } = newNode;
+    if (
+      newNodeType !== targetNode.nodeType
+      || (newNodeType === 1 && newNode.nodeName !== targetNode.nodeName)
+    ) {
       return targetNode.parentNode.replaceChild(newNode, targetNode);
     }
     // Should only reach here if both nodes are of same type.
-    if (newNode.nodeType === 1) { // HTMLElements
+    if (newNodeType === 1) { // HTMLElements
       // Sync attributes
       // Remove any attributes not in source
       let i = targetNode.attributes.length - 1, len, attr;
@@ -46,8 +49,11 @@ const {render, diffAndPatch} = (() => {
         }
         correctDOMStateForAddedAttribute(targetNode, attr.name, attr.value);
       }
+
+      // TODO: In future, optimize sorting lists (with keys).
+      // TODO: Reorder DOM based on keys and indexes before child synchronization
   
-      // Remove extra nodes
+      // Remove extra child nodes
       while (targetNode.childNodes.length > newNode.childNodes.length) {
         targetNode.removeChild(targetNode.lastChild);
       }
@@ -57,12 +63,12 @@ const {render, diffAndPatch} = (() => {
         let oldChildNode = targetNode.childNodes[i];
         if (!oldChildNode) {
           targetNode.appendChild(newChildNode)
-        } else if (newChildNode !== oldChildNode) {
+        } else {
           // sync required..
           diffAndPatch(newChildNode, oldChildNode);
         }
       }
-    } else if (newNode.nodeType === 3 || newNode.nodeType === 8) { // text and comment nodes
+    } else if (newNodeType === 3 || newNodeType === 8) { // text and comment nodes
       targetNode.nodeValue = newNode.nodeValue;
     }
   };

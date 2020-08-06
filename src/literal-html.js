@@ -252,20 +252,20 @@ class View {
         if (value instanceof View) {
           value.render({ startNode: startMarker, endNode: endMarker });
         } else if (Array.isArray(value)) {
-          let nodes = [];
+          let nodesAndValues = [];
           for (const subValue of value) {
             if (value instanceof View) {
-              nodes.push(...value.render());
+              nodesAndValues.push(...value.render());
             } else {
-              nodes.push(value);
+              nodesAndValues.push(value);
             }
           }
-          View.reconcileNodes(nodes, startMarker, endMarker);
+          View.reconcileDOM(nodesAndValues, startMarker, endMarker);
         } else {
           // assuming values is a text node or primitive (string/number) at this point
           // console.log('before reconcile', View.getNodesBetween(startMarker, endMarker));
           // debugger;
-          View.reconcileNodes([value], startMarker, endMarker);
+          View.reconcileDOM([value], startMarker, endMarker);
           // console.log('after reconcile', View.getNodesBetween(startMarker, endMarker));
         }
       }
@@ -289,12 +289,12 @@ class View {
         // clear content and add comment markers
         parentNode.innerHTML = '<!--p--><!--p-->';
       }
-      View.reconcileNodes(nodes, parentNode.firstChild, parentNode.lastChild);
+      View.reconcileDOM(nodes, parentNode.firstChild, parentNode.lastChild);
     } else if (startNode || endNode) {
       if (!startNode || !endNode || startNode.nodeType !== 8 || endNode.nodeType !== 8 || startNode === endNode) {
         throw new Error('startNode and endNode must be two distinct HTML comment nodes');
       }
-      View.reconcileNodes(nodes, startNode, endNode);
+      View.reconcileDOM(nodes, startNode, endNode);
     } else {
       // return copy of "refreshed" nodes ready to be inserted like a DocumentFragment.
       // except that I can't use DocumentFragment as that will unnecessarily disrupt nodes
@@ -333,19 +333,27 @@ View.getNodesBetween = (startMarker, endMarker) => {
 
 /**
  * Dumb DOM diff of nodes from start node + 1 to end node - 1
- * @param {Node[]} newNodes 
+ * @param {(Node|String|Number)[]} newNodesAndValues 
  * @param {Node} startMarker
  * @param {Node} endMarker 
  */
 // TODO: In future, optimize sorting lists (with keys).
-View.reconcileNodes = (newNodes, startMarker, endMarker) => {
+View.reconcileDOM = (newNodesAndValues, startMarker, endMarker) => {
   let currentNode = startMarker.nextSibling;
   let index = 0;
   const toTextNode = (value) => ((value instanceof Node) ? value : document.createTextNode(String(value)));
-  while (currentNode && currentNode !== endMarker && index < newNodes.length) {
-    const newNode = newNodes[index];
-    if (currentNode !== newNode) {
-      currentNode.parentNode.replaceChild(toTextNode(newNode), currentNode);
+  while (currentNode && currentNode !== endMarker && index < newNodesAndValues.length) {
+    const newNodeOrValue = newNodesAndValues[index];
+    if (currentNode !== newNodeOrValue) {
+      // if current node is a text/comment and new value is a primitive, then re-use existing DOM
+      if (
+        (currentNode.nodeType === 3 || currentNode.nodeType === 8)
+        && !(newNodeOrValue instanceof Node)
+      ) {
+        currentNode.data = String(newNodeOrValue);
+      } else {
+        currentNode.parentNode.replaceChild(toTextNode(newNodeOrValue), currentNode);
+      }
     }
     // prepare for next iteration
     currentNode = currentNode.nextSibling;
@@ -360,8 +368,8 @@ View.reconcileNodes = (newNodes, startMarker, endMarker) => {
     startMarker.parentNode.removeChild(nodeToRemove);
   }
   // insert rest of nodes
-  while (index < newNodes.length) {
-    const newNode = newNodes[index];
+  while (index < newNodesAndValues.length) {
+    const newNode = newNodesAndValues[index];
     endMarker.parentNode.insertBefore(toTextNode(newNode), endMarker);
     // prepare for next iteration
     index += 1;
