@@ -1,31 +1,15 @@
-let {render, diffAndPatch} = (() => {
-  let correctDOMStateForRemovedAttribute = (el, attrName) => {
-    if (['disabled', 'checked'].includes(attrName)) {
-      el[attrName] = false;
-    } else if (attrName === 'value') {
-      el.value = '';
-    }
-  }
-  
-  let correctDOMStateForAddedAttribute = (el, attrName, attrValue) => {
-    if (['disabled', 'checked'].includes(attrName)) {
-      el[attrName] = true;
-    } else if (attrName === 'value') {
-      el.value = attrValue;
-    }
-  }
-  
+let {render, diffAndPatch} = (() => {  
   /**
    * Sync DOM from source element to target element.
+   * Naive algo that syncs nodes of same index
+   * Time complexity O(N) - where N is lengths of the larger array's total nodes (including sub-tree of nodes).
    */
-  // Dumb diff algo that checks nodes of same index
-  // Time complexity O(n) - where n is lengths of the larger array.
   let diffAndPatch = (newNode, targetNode) => {
     if (newNode === targetNode) return;
     let { nodeType: newNodeType } = newNode;
     if (
-      newNodeType !== targetNode.nodeType
-      || (newNodeType === 1 && newNode.nodeName !== targetNode.nodeName)
+      newNodeType !== targetNode.nodeType ||
+      (newNodeType === 1 && newNode.nodeName !== targetNode.nodeName)
     ) {
       return targetNode.parentNode.replaceChild(newNode, targetNode);
     }
@@ -38,21 +22,16 @@ let {render, diffAndPatch} = (() => {
         attr = targetNode.attributes.item(i);
         if (!newNode.attributes.getNamedItem(attr.name)) {
           targetNode.attributes.removeNamedItem(attr.name);
-          correctDOMStateForRemovedAttribute(targetNode, attr.name);
         }
       }
       // update the rest
       for (i = 0, len = newNode.attributes.length; i < len; i += 1) {
         attr = newNode.attributes.item(i);
-        if (attr.name !== 'value') { // Security: prevent CSS key loggers
+        if (targetNode.getAttribute(attr.name) !== attr.value) {
           targetNode.setAttribute(attr.name, attr.value); // browser optimizes if update isn't needed.
         }
-        correctDOMStateForAddedAttribute(targetNode, attr.name, attr.value);
       }
 
-      // TODO: In future, optimize sorting lists (with keys).
-      // TODO: Reorder DOM based on keys and indexes before child synchronization
-  
       // Remove extra child nodes
       while (targetNode.childNodes.length > newNode.childNodes.length) {
         targetNode.removeChild(targetNode.lastChild);
@@ -62,14 +41,16 @@ let {render, diffAndPatch} = (() => {
         let newChildNode = newNode.childNodes[i];
         let oldChildNode = targetNode.childNodes[i];
         if (!oldChildNode) {
-          targetNode.appendChild(newChildNode)
+          targetNode.appendChild(newChildNode);
         } else {
           // sync required..
           diffAndPatch(newChildNode, oldChildNode);
         }
       }
     } else if (newNodeType === 3 || newNodeType === 8) { // text and comment nodes
-      targetNode.nodeValue = newNode.nodeValue;
+      if (targetNode.nodeValue !== newNode.nodeValue) {
+        targetNode.nodeValue = newNode.nodeValue;
+      }
     }
   };
   let render = (html, targetNode) => {

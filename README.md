@@ -1,14 +1,13 @@
 # sync-html
 
-An experiment to find out the smallest HTML template to DOM sync approach
+An experiment to try out various tiny HTML template to DOM sync approach
 (and also support rendering as string for server-side JS environment).
-
-Mission is to get the bundle size as small as possible.
 
 Current status:
 
 * template literal approach - ~1.5 KB gzipped
-* dumb DOM diff approach - ~0.5 KB gzipped
+* naive DOM patch approach - ~0.5 KB gzipped
+* smarter DOM sync approach - ~0.8 KB gzipped
 
 ## How to check it
 
@@ -20,4 +19,5 @@ npm start
 Visit one of the following URLs:
 
 * [localhost:8080/literal](http://localhost:8080/literal)
-* [localhost:8080/dom-diff](http://localhost:8080/dom-diff)
+* [localhost:8080/dom-patch](http://localhost:8080/dom-patch)
+* [localhost:8080/dom-sync](http://localhost:8080/dom-sync)
