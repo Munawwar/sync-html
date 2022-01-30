@@ -8,7 +8,7 @@ Current status:
 * template literal approach - ~1.5 KB gzipped
 * naive DOM patch approach - ~0.5 KB gzipped
 * smarter DOM sync approach - ~0.8 KB gzipped
-* udomdiff modified - ~0.5 KB gzipped
+* udomdiff modified - ~0.5 KB gzipped (it's buggy though .. it cant handle attribute change)
 
 ## How to check it
 
