@@ -1,0 +1,49 @@
+<script src="./src/udomdiff-modified.js"></script>
+
+<div id="root"></div>
+<button onclick="sortItems()">Sort</button>
+<button onclick="removeTwo()">Remove 2</button>
+<button onclick="addAttributeToThree()">Add attribute to 3</button>
+<script>
+  let data = [3, 2, 1, 1, 0];
+  function toHtml(withAttribute) {
+    return data.map(num => `<div${num === 3 && withAttribute ? ' style="background-color:grey"' : ''}>${num}</div>`).join('');
+  }
+  function parseHtml(html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    return template.content;
+  }
+  // first render
+  const root = document.getElementById('root');
+  root.appendChild(parseHtml(toHtml()))
+
+  function sortItems() {
+    data.sort();
+    window.udomdiff(
+      root,
+      Array.from(root.childNodes),
+      Array.from(parseHtml(toHtml()).childNodes),
+      n => n,
+    )
+  }
+
+  function removeTwo() {
+    data = data.filter(x => x !== 2);
+    window.udomdiff(
+      root,
+      Array.from(root.childNodes),
+      Array.from(parseHtml(toHtml()).childNodes),
+      n => n,
+    )
+  }
+
+  function addAttributeToThree() {
+    window.udomdiff(
+      root,
+      Array.from(root.childNodes),
+      Array.from(parseHtml(toHtml(true)).childNodes),
+      n => n,
+    )
+  }
+</script>
