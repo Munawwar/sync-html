@@ -3,7 +3,8 @@
 <div id="root"></div>
 <button onclick="sortItems()">Sort</button>
 <button onclick="removeTwo()">Remove 2</button>
-<button onclick="addAttributeToThree()">Add attribute to 3</button>
+<button onclick="addFourAndRemoveTwo()">Add 4 and remove 2</button>
+<button onclick="addAttributeToThree()">Temporarily add attribute to 3</button>
 <script>
   let data = [3, 1, 2, 0, 1];
   function toHtml(withAttribute) {
@@ -29,6 +30,15 @@
 
   function removeTwo() {
     data = data.filter(x => x !== 2);
+    window.patchDom(
+      Array.from(parseHtml(toHtml()).childNodes),
+      Array.from(root.childNodes),
+      root,
+    )
+  }
+
+  function addFourAndRemoveTwo() {
+    data = data.concat([4]).filter(x => x !== 2);
     window.patchDom(
       Array.from(parseHtml(toHtml()).childNodes),
       Array.from(root.childNodes),

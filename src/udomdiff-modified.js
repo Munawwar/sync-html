@@ -89,20 +89,22 @@ var udomdiff = (function (exports) {
         --bEnd;
         var startInsertBefore = a[aStart].nextSibling;
         parentNode.insertBefore(a[aStart++], a[aEnd].nextSibling);
-        // if the two nodes where adjacent siblings then they are already swapped now, so ignore that case.
+        // if the two nodes were adjacent siblings then they are already swapped now, so ignore that case.
         if (startInsertBefore !== a[aEnd]) {
           parentNode.insertBefore(a[aEnd], startInsertBefore);
         }
         // var _node = get(a[--aEnd], -1).nextSibling;
         // parentNode.insertBefore(get(b[bStart++], 1), get(a[aStart++], -1).nextSibling);
-        // parentNode.insertBefore(get(b[--bEnd], 1), _node); // mark the future index as identical (yeah, it's dirty, but cheap 👍)
+        // parentNode.insertBefore(get(b[--bEnd], 1), _node);
+
+        // mark the future index as identical (yeah, it's dirty, but cheap 👍)
         // The main reason to do this, is that when a[aEnd] will be reached,
         // the loop will likely be on the fast path, as identical to b[bEnd].
         // In the best case scenario, the next loop will skip the tail,
         // but in the worst one, this node will be considered as already
         // processed, bailing out pretty quickly from the map index check
 
-        // a[aEnd] = b[bEnd];
+        // a[aEnd] = b[bEnd]; // TODO: is this really needed?
       } // map based fallback, "slow" path
       else {
         // the map requires an O(bEnd - bStart) operation once
